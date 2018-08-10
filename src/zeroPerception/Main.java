@@ -13,13 +13,17 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Perceptron A = new Perceptron(5);
-		A.forwardProp();
+		double[][] B = { { 1 } };
+		double[][] C = { { 1 } };
+		Perceptron A = new Perceptron(1);
+		A.forwardProp(B);
 		//A.forwardInfo();
-		A.backProp();
+		A.backProp(C);
 		//A.backwardInfo();
-		//A.printALL();
 		A.APPLY();
+		//A.cost();
+		//A.info();
+		//A.printALL();
 	}
 
 }
