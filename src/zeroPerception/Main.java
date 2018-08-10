@@ -14,10 +14,10 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 		Perceptron A = new Perceptron(5);
-		A.ForwardInfo();
-		A.ForwardProp();
-		A.BackwardInfo();
-		A.BackProp();
+		A.forwardProp();
+		//A.forwardInfo();
+		A.backProp();
+		//A.backwardInfo();
 		//A.printALL();
 		A.APPLY();
 	}
