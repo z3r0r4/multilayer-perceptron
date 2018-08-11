@@ -19,7 +19,7 @@ public class Perceptron {
 	private List<Double> C = new ArrayList<Double>();
 	private List<Double> Cmean = new ArrayList<Double>();
 	public int t = 0;
-	private double lamda = 1;
+	private double lamda = 0.1;
 
 	public Perceptron(int... NumberOfNodes) { //NumberOfNodes[Layer] Anzahl der nodes im layer 'Layer' 
 		No_l = NumberOfNodes.length; //NumberOfNodes.length Anzahl der Layerrs
@@ -28,27 +28,18 @@ public class Perceptron {
 		a = new Matrix[No_l];
 		for (int i = 0; i < No_l; i++) {
 			a[i] = new Matrix(NumberOfNodes[i], 1); //filled with 0
-			//			System.out.print("a: ");
-			//			a[i].info(null);
+
 		}
-//		System.out.println("-------------------------------------------------");
+
 		System.out.println("generating Inbetweenthingys, Biases and Weights foreach Layer except the last");
 		z = new Matrix[No_l - 1];
 		b = new Matrix[No_l - 1];
 		w = new Matrix[No_l - 1];
 		for (int i = 0; i < No_l - 1; i++) {
 			System.out.println("intialising Layer " + i);
-			//			System.out.print("a+:");
-			//			a[i + 1].info(null);
 			z[i] = new Matrix(a[i + 1].getRows(), 1); // filled with 0
-			//			System.out.print("z: ");
-			//			z[i].info(null);
-			b[i] = new Matrix(a[i + 1].getRows(), 1, -1, 1); // filled with random data
-			//			System.out.print("b: ");
-			//			b[i].info(null);
-			w[i] = new Matrix(a[i + 1].getRows(), a[i].getRows(), -1, 1); // filled with random data
-			//			System.out.print("w: ");
-			//			w[i].info(null);
+			b[i] = new Matrix(a[i + 1].getRows(), 1, 1, 10); // filled with random data
+			w[i] = new Matrix(a[i + 1].getRows(), a[i].getRows(), 1, 10); // filled with random data
 		}
 
 		System.out.println("+++++++++++initialising Variables for Backpropagation+++++++++++");
@@ -57,15 +48,10 @@ public class Perceptron {
 		Gradient_b = new Matrix[No_l - 1];
 		Gradient_w = new Matrix[No_l - 1];
 		for (int i = 0; i < No_l - 1; i++) {
+			System.out.println("intialising Layer " + i);
 			Gradient_a[i] = new Matrix(a[i].getRows(), 1); // filled with 0
-			//			System.out.print("d_a: ");
-			//			Gradient_a[i].info(null);
 			Gradient_b[i] = new Matrix(b[i].getRows(), 1); // filled with 0
-			//			System.out.print("d_b: ");
-			//			Gradient_b[i].info(null);
 			Gradient_w[i] = new Matrix(a[i + 1].getRows(), a[i].getRows()); // filled with 0
-			//			System.out.print("d_w: ");
-			//			Gradient_w[i].info(null);
 		}
 		Gradient_a[No_l - 1] = new Matrix(a[No_l - 1].getRows(), 1); // filled with 0 // Node Gradient for the last layer
 
@@ -78,13 +64,12 @@ public class Perceptron {
 
 		System.out.println("++++++++++Finished Initialisation of variables+++++++++++++ \n\n");
 	}
-	
 
 	public void forwardProp(double[][] input) {//takes the input for the network as input
-		System.out.println("\n++++++++FORWARD-PROPAGATION++++++++++");
+		System.out.println("\n++++++++FORWARD-PROPAGATION++++++++++" + t);
 		a[0].setData(input);
 		for (int i = 1; i < No_l; i++) {
-			System.out.printf("calculating Layer %d \n", i);
+			//System.out.printf("calculating Layer %d \n", i);
 
 			z[i - 1].setData(
 					Matrix.add(
@@ -93,12 +78,18 @@ public class Perceptron {
 							.getData());
 
 			a[i].setData(sigmoid(z[i - 1]).getData());
+			//						a[i].setData(  		//cant be used since backprop needs z[n] defined
+			//								sigmoid(
+			//								Matrix.add(
+			//										Matrix.prod(w[i - 1], a[i - 1]),
+			//										b[i - 1])
+			//										).getData());
 		}
 	}
 
 	public void backProp(double[][] correctAnswer) {
-		System.out.println("\n+++++++++++BACKWARD-PROPAGATION++++++++++");
-		System.out.println("---CALCULATION OF a_GRADIENT FOR EVERY LAYER---");
+		System.out.println("\n++++++++BACKWARD-PROPAGATION+++++++++" + t);
+		//System.out.println("---CALCULATION OF a_GRADIENT FOR EVERY LAYER---");
 		y.setData(correctAnswer);
 		//Gradient computation for the last Layer
 		for (int i = 0; i < Gradient_a[No_l - 1].getRows(); i++)
@@ -122,7 +113,7 @@ public class Perceptron {
 			}
 		}
 
-		System.out.println("---CALCULATION OF b_GRADIENT FOR EVERY LAYER---");
+		//System.out.println("---CALCULATION OF b_GRADIENT FOR EVERY LAYER---");
 
 		for (int n = No_l - 2; n > 0; n--) { // -2 Because -1 => upper bound -2 => one lower than upper bound|| bound of b[n]
 			for (int i = 0; i < Gradient_b[n].getRows(); i++) {
@@ -132,7 +123,7 @@ public class Perceptron {
 						i, 0);
 			}
 		}
-		System.out.println("---CALCULATION OF w_GRADIENT FOR EVERY LAYER---");
+		//System.out.println("---CALCULATION OF w_GRADIENT FOR EVERY LAYER---");
 		for (int n = No_l - 2; n > 0; n--) {
 			Gradient_w[n].setData(
 					Matrix.transpose(
@@ -186,18 +177,20 @@ public class Perceptron {
 	public void info() {
 		System.out.println("\nError of Propagation " + t + " is:\n" + C.get(t - 1));
 		System.out.println("The resulting Matrix is: ");
-		
-		
-		Matrix.printM(a[No_l-1]);
+		Matrix.printM(a[No_l - 1]);
 	}
 
-	public void printALL() { // redo this with javaFX
-		for (int n = No_l - 2; n > 0; n--) {
-			Matrix.printM(w[n]);
-			Matrix.printM(Gradient_w[n]);
-			Matrix.printM(b[n]);
-			Matrix.printM(Gradient_b[n]);
+	public void printAll() {
+		for (int i = 0; i < No_l - 1; i++) {
+			System.out.println("Layer " + i);
+			System.out.println("w: ");
+			Matrix.printM(w[i]);
+			System.out.println("b: ");
+			Matrix.printM(b[i]);
+			System.out.println("z: ");
+			Matrix.printM(z[i]);
 		}
+
 	}
 
 	//SIGMOID THINGS
