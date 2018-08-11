@@ -16,8 +16,9 @@ public class Perceptron {
 	private int No_l;// number of Layers
 
 	private Matrix y;
-	private List<Double> C, Cmean = new ArrayList<Double>();
-	private int t = 0;
+	private List<Double> C = new ArrayList<Double>();
+	private List<Double> Cmean = new ArrayList<Double>();
+	public int t = 0;
 	private double lamda = 1;
 
 	public Perceptron(int... NumberOfNodes) { //NumberOfNodes[Layer] Anzahl der nodes im layer 'Layer' 
@@ -30,7 +31,7 @@ public class Perceptron {
 			//			System.out.print("a: ");
 			//			a[i].info(null);
 		}
-		System.out.println("-------------------------------------------------");
+//		System.out.println("-------------------------------------------------");
 		System.out.println("generating Inbetweenthingys, Biases and Weights foreach Layer except the last");
 		z = new Matrix[No_l - 1];
 		b = new Matrix[No_l - 1];
@@ -77,6 +78,7 @@ public class Perceptron {
 
 		System.out.println("++++++++++Finished Initialisation of variables+++++++++++++ \n\n");
 	}
+	
 
 	public void forwardProp(double[][] input) {//takes the input for the network as input
 		System.out.println("\n++++++++FORWARD-PROPAGATION++++++++++");
@@ -96,7 +98,6 @@ public class Perceptron {
 
 	public void backProp(double[][] correctAnswer) {
 		System.out.println("\n+++++++++++BACKWARD-PROPAGATION++++++++++");
-		t++;
 		System.out.println("---CALCULATION OF a_GRADIENT FOR EVERY LAYER---");
 		y.setData(correctAnswer);
 		//Gradient computation for the last Layer
@@ -183,8 +184,11 @@ public class Perceptron {
 	}
 
 	public void info() {
-		System.out.println(C.get(t));
-		Matrix.printM(a[1]);
+		System.out.println("\nError of Propagation " + t + " is:\n" + C.get(t - 1));
+		System.out.println("The resulting Matrix is: ");
+		
+		
+		Matrix.printM(a[No_l-1]);
 	}
 
 	public void printALL() { // redo this with javaFX
