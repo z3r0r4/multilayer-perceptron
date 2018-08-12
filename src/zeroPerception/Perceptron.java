@@ -3,61 +3,46 @@ package zeroPerception;
 import java.util.ArrayList;
 import java.util.List;
 
-import zeroMath.Matrix;
-
 /**
  * @author z3r0r4
  * @version 1.0
  */
 
 public class Perceptron {
+	public int No_l;// number of Layers
+	public int t = 0;//number of iterations
+	public double lamda = 0.1; //learning rate
 	public Matrix[] Layers, z, Bias, weights;
 	public Matrix[] δCost_δLayers, δCost_δWeights, δCost_δBiases;
-	public int No_l;// number of Layers
-
 	public Matrix y;
 	public List<Double> C = new ArrayList<Double>();
 
-	public int t = 0;
-	public double lamda = 0.01;
-
 	public Perceptron(int... NumberOfNodes) { //NumberOfNodes[Layer] Anzahl der nodes im layer 'Layer' 
 		System.out.println("++++++++INITIALISING+++++++++");
+
 		No_l = NumberOfNodes.length; //NumberOfNodes.length Anzahl der Layerrs
-
 		Layers = new Matrix[No_l];
-		for (int i = 0; i < No_l; i++) {
-			Layers[i] = new Matrix(NumberOfNodes[i], 1, 0); //filled with 0
-
-		}
-
-		//z = new Matrix[No_l - 1];
 		Bias = new Matrix[No_l - 1];
 		weights = new Matrix[No_l - 1];
-		for (int i = 0; i < No_l - 1; i++) {
-			//z[i] = new Matrix(Layers[i + 1].getRows(), 1,0,0); // filled with 0
-			Bias[i] = new Matrix(Layers[i + 1].getRows(), 1, 1, 10); // filled with random data
-			weights[i] = new Matrix(Layers[i + 1].getRows(), Layers[i].getRows(), 1, 10); // filled with random data
-		}
-
 		δCost_δLayers = new Matrix[No_l];
 		δCost_δBiases = new Matrix[No_l - 1];
 		δCost_δWeights = new Matrix[No_l - 1];
-		for (int i = 0; i < No_l - 1; i++) {
 
+		for (int i = 0; i < No_l; i++) {
+			Layers[i] = new Matrix(NumberOfNodes[i], 1); //filled with 0
 			δCost_δLayers[i] = new Matrix(Layers[i].getRows(), 1); // filled with 0
-			δCost_δBiases[i] = new Matrix(Bias[i].getRows(), 1); // filled with 0
-			δCost_δWeights[i] = new Matrix(Layers[i + 1].getRows(), Layers[i].getRows()); // filled with 0
 		}
-		δCost_δLayers[No_l - 1] = new Matrix(Layers[No_l - 1].getRows(), 1); // filled with 0 // Node Gradient for the last layer
 
+		for (int i = 0; i < No_l - 1; i++) {
+			Bias[i] = new Matrix(Layers[i + 1].getRows(), 1);
+			weights[i] = new Matrix(Layers[i + 1].getRows(), Layers[i].getRows());
+			δCost_δBiases[i] = new Matrix(Bias[i].getRows(), 1);
+			δCost_δWeights[i] = new Matrix(Layers[i + 1].getRows(), Layers[i].getRows());
+		}
 		y = new Matrix(Layers[Layers.length - 1].getRows(), 1);
-		for (int i = 0; i < y.getRows(); i++)
-			y.setData(10, i, 0); // filled with 0 for now atleast
-
 	}
 
-	public void forwardProp(double[][] input) {//takes the input for the network as input
+	public void forwardProp(double[][] input) {//takes the input for the network as input //WORKS
 		System.out.println("\n++++++++FORWARD-PROPAGATION++++++++++" + t);
 		t++;
 		Layers[0].setData(input);
@@ -78,21 +63,21 @@ public class Perceptron {
 		//Gradient_a computation for the last Layer
 		δCost_δLayers[No_l - 1] = Matrix.scalarmult(2, Matrix.add(Layers[No_l - 1], Matrix.negate(y)));
 		//Gradient_a computation for all layers except the last
-		for (int n = No_l - 2; n > 0; n--) {
+		for (int n = No_l - 2; n >= 0; n--) {
 			δCost_δLayers[n] = Matrix.prod(Matrix.transpose(weights[n]),
 					Matrix.mult(
 							Matrix.mult(Layers[n + 1], Matrix.negate(Layers[n + 1]).add(1)), //==sigmoid_1(z[n])
 							δCost_δLayers[n + 1]));
 		}
 		//Gradient_b computation for all layers except the last
-		for (int n = No_l - 2; n > 0; n--) {
+		for (int n = No_l - 2; n >= 0; n--) {
 			δCost_δBiases[n] = Matrix.mult(
 					Matrix.mult(Layers[n + 1], Matrix.negate(Layers[n + 1]).add(1)), //==sigmoid_1(z[n].getData(l, 0))
 					δCost_δLayers[n + 1]);
 			//Gradient_w computation for all layers except the last
 			δCost_δWeights[n] = Matrix.prod(
 					Matrix.mult(Layers[n + 1], Matrix.negate(Layers[n + 1]).add(1)), //==sigmoid_1(z[n])
-					Matrix.transpose(Matrix.mult(Layers[n], δCost_δLayers[n])));
+					Matrix.transpose(Matrix.mult(Layers[n], δCost_δLayers[n ])));
 		}
 	}
 
@@ -145,10 +130,14 @@ public class Perceptron {
 			Matrix.printM(weights[i]);
 			System.out.println("Bias: ");
 			Matrix.printM(Bias[i]);
-
 		}
+		System.out.println("guess: ");
+		Matrix.printM(Layers[No_l-1]);
+		System.out.println("Target: ");
+		Matrix.printM(y);
 
 	}
+	
 
 	//SIGMOID THINGS
 	private Matrix sigmoid(Matrix A) {
