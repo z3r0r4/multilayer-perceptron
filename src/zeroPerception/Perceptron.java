@@ -61,7 +61,7 @@ public class Perceptron {
 		System.out.println("\n++++++++BACKWARD-PROPAGATION+++++++++" + t);
 		y = Matrix.fromArray(correctAnswer);
 		//Gradient_a computation for the last Layer
-		δCost_δLayers[No_l - 1] = Matrix.scalarmult(2, Matrix.add(Layers[No_l - 1], Matrix.negate(y)));
+		δCost_δLayers[No_l - 1] = Matrix.scalarmult(1, Matrix.add( Matrix.negate(y),Layers[No_l - 1]));
 		//Gradient_a computation for all layers except the last
 		for (int n = No_l - 2; n >= 0; n--) {
 			δCost_δLayers[n] = Matrix.prod(Matrix.transpose(weights[n]),
