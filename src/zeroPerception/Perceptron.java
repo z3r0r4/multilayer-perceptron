@@ -3,202 +3,169 @@ package zeroPerception;
 import java.util.ArrayList;
 import java.util.List;
 
-import zeroMath.Matrix;
-
 /**
  * @author z3r0r4
- * @version 1.0
+ * @version 2.0
  */
 
 public class Perceptron {
-	private Matrix[] a, z, b, w;
-	private Matrix[] Gradient_a, Gradient_w, Gradient_b;
-	private int No_l;// number of Layers
+	private int No_L;// number of Layers
+	private int t = 0;//number of iterations
+	private double η = 0.1; //learning rate
+	private Matrix[] Layers, Biases, Weights;
+	private Matrix[] δ, δCost_δWeights, δCost_δBiases;//previously δCost_δLayers = δ
+	private Matrix Target;
 
-	private Matrix y;
-	private List<Double> C = new ArrayList<Double>();
-	private List<Double> Cmean = new ArrayList<Double>();
-	public int t = 0;
-	private double lamda = 1;
+	private List<Matrix[]> C = new ArrayList<Matrix[]>(); //for batches Δ C={δCost_δWeights, δCost_δBiases}
+	private Matrix[] MeanδCost_δWeights, MeanδCost_δBiases;
 
 	public Perceptron(int... NumberOfNodes) { //NumberOfNodes[Layer] Anzahl der nodes im layer 'Layer' 
-		No_l = NumberOfNodes.length; //NumberOfNodes.length Anzahl der Layerrs
-		System.out.println("+++++++++++initialising Variables for Forwardpropagation+++++++++++");
-		System.out.println("generating Nodes foreach Layer");
-		a = new Matrix[No_l];
-		for (int i = 0; i < No_l; i++) {
-			a[i] = new Matrix(NumberOfNodes[i], 1); //filled with 0
-			//			System.out.print("a: ");
-			//			a[i].info(null);
-		}
-//		System.out.println("-------------------------------------------------");
-		System.out.println("generating Inbetweenthingys, Biases and Weights foreach Layer except the last");
-		z = new Matrix[No_l - 1];
-		b = new Matrix[No_l - 1];
-		w = new Matrix[No_l - 1];
-		for (int i = 0; i < No_l - 1; i++) {
-			System.out.println("intialising Layer " + i);
-			//			System.out.print("a+:");
-			//			a[i + 1].info(null);
-			z[i] = new Matrix(a[i + 1].getRows(), 1); // filled with 0
-			//			System.out.print("z: ");
-			//			z[i].info(null);
-			b[i] = new Matrix(a[i + 1].getRows(), 1, -1, 1); // filled with random data
-			//			System.out.print("b: ");
-			//			b[i].info(null);
-			w[i] = new Matrix(a[i + 1].getRows(), a[i].getRows(), -1, 1); // filled with random data
-			//			System.out.print("w: ");
-			//			w[i].info(null);
+		System.out.println("++++++++INITIALISING+++++++++");
+		No_L = NumberOfNodes.length; //NumberOfNodes.length Anzahl der Layerrs
+
+		Layers = new Matrix[No_L];
+		Weights = Biases = new Matrix[No_L - 1];
+		Weights = new Matrix[No_L - 1];
+		δ = new Matrix[No_L];
+		δCost_δBiases = new Matrix[No_L - 1];
+		δCost_δWeights = new Matrix[No_L - 1];
+		MeanδCost_δBiases = new Matrix[No_L - 1];
+		MeanδCost_δWeights = new Matrix[No_L - 1];
+
+		for (int i = 0; i < No_L; i++) {
+			Layers[i] = new Matrix(NumberOfNodes[i], 1); //filled with 0
+			δ[i] = new Matrix(Layers[i].getRows(), 1); // filled with 0
 		}
 
-		System.out.println("+++++++++++initialising Variables for Backpropagation+++++++++++");
-		System.out.println("generating Node, Bias and Weight Gradients foreach Layer except the last");
-		Gradient_a = new Matrix[No_l];
-		Gradient_b = new Matrix[No_l - 1];
-		Gradient_w = new Matrix[No_l - 1];
-		for (int i = 0; i < No_l - 1; i++) {
-			Gradient_a[i] = new Matrix(a[i].getRows(), 1); // filled with 0
-			//			System.out.print("d_a: ");
-			//			Gradient_a[i].info(null);
-			Gradient_b[i] = new Matrix(b[i].getRows(), 1); // filled with 0
-			//			System.out.print("d_b: ");
-			//			Gradient_b[i].info(null);
-			Gradient_w[i] = new Matrix(a[i + 1].getRows(), a[i].getRows()); // filled with 0
-			//			System.out.print("d_w: ");
-			//			Gradient_w[i].info(null);
-		}
-		Gradient_a[No_l - 1] = new Matrix(a[No_l - 1].getRows(), 1); // filled with 0 // Node Gradient for the last layer
-
-		System.out.println("-------------------------------------------------");
-		System.out.println("generating correct Answers");
-		y = new Matrix(a[a.length - 1].getRows(), 1);
-		for (int i = 0; i < y.getRows(); i++)
-			y.setData(10, i, 0); // filled with 0 for now atleast
-		//y.info(null);
-
-		System.out.println("++++++++++Finished Initialisation of variables+++++++++++++ \n\n");
-	}
-	
-
-	public void forwardProp(double[][] input) {//takes the input for the network as input
-		System.out.println("\n++++++++FORWARD-PROPAGATION++++++++++");
-		a[0].setData(input);
-		for (int i = 1; i < No_l; i++) {
-			System.out.printf("calculating Layer %d \n", i);
-
-			z[i - 1].setData(
-					Matrix.add(
-							Matrix.prod(w[i - 1], a[i - 1]),
-							b[i - 1])
-							.getData());
-
-			a[i].setData(sigmoid(z[i - 1]).getData());
+		for (int i = 0; i < No_L - 1; i++) {
+			Biases[i] = new Matrix(Layers[i + 1].getRows(), 1, 1);
+			Weights[i] = new Matrix(Layers[i + 1].getRows(), Layers[i].getRows(), 1);
+			δCost_δBiases[i] = new Matrix(Biases[i].getRows(), 1);
+			δCost_δWeights[i] = new Matrix(Layers[i + 1].getRows(), Layers[i].getRows());
+			MeanδCost_δBiases[i] = new Matrix(Biases[i].getRows(), 1);
+			MeanδCost_δWeights[i] = new Matrix(Layers[i + 1].getRows(), Layers[i].getRows());
 		}
 	}
 
-	public void backProp(double[][] correctAnswer) {
-		System.out.println("\n+++++++++++BACKWARD-PROPAGATION++++++++++");
-		System.out.println("---CALCULATION OF a_GRADIENT FOR EVERY LAYER---");
-		y.setData(correctAnswer);
-		//Gradient computation for the last Layer
-		for (int i = 0; i < Gradient_a[No_l - 1].getRows(); i++)
+	public int getNumber_of_iterations() {
+		return t;
+	}
 
-			Gradient_a[No_l - 1].setData(
-					2 * (a[No_l - 1].getData(i, 0) - y.getData(i, 0)), //first derivative of the cost function
-					i, 0);
+	public void Train(int Iterations, double[][] input, double[][] Target) {
+		for (int it = 0; it < Iterations; it++) {
+			forwardProp(input);
+			backProp(Target);
+			Apply(δCost_δWeights, δCost_δBiases);
+			t++;
+			//System.out.println(cost(Target));
+			//learningrate();
+		}
+	}
 
-		//Gradient computation for all layers except the last
-		double var = 0;
-		for (int n = No_l - 2; n > 0; n--) {
-			for (int i = 0; i < Gradient_a[n].getRows(); i++) {
-				var = 0;
-
-				for (int l = 0; l < z[n].getRows(); l++) {
-					var += w[n].getData(l, i)
-							* sigmoid_1(z[n].getData(l, 0))
-							* Gradient_a[n + 1].getData(l, 0);
+	public void Train(int Iterations, double[][] input, double[][] Target, int No) {
+		for (int it = 0; it < Iterations; it++) {
+			C = new ArrayList<Matrix[]>();
+			for (int i = 0; i < No; i++) {
+				forwardProp(input);
+				backProp(Target);
+				C.add(δCost_δWeights);
+				C.add(δCost_δBiases);
+				t++;
+			}
+			for (int i = 0; 2 * i + 1 < C.size(); i++) {
+				for (int n = 0; n < No_L - 1; n++) {
+					MeanδCost_δWeights[n].add(C.get(2 * i)[n]);
+					MeanδCost_δWeights[n].scalarmult(1 / (No - 1));
+					MeanδCost_δBiases[n].add(C.get(2 * i + 1)[n]);
+					MeanδCost_δBiases[n].scalarmult(1 / (No - 1));
 				}
-				Gradient_a[n].setData(var, i, 0);
 			}
-		}
 
-		System.out.println("---CALCULATION OF b_GRADIENT FOR EVERY LAYER---");
+			Apply(MeanδCost_δWeights, MeanδCost_δBiases);
 
-		for (int n = No_l - 2; n > 0; n--) { // -2 Because -1 => upper bound -2 => one lower than upper bound|| bound of b[n]
-			for (int i = 0; i < Gradient_b[n].getRows(); i++) {
-				Gradient_b[n].setData(
-						sigmoid_1(z[n].getData(i, 0))
-								* Gradient_a[n + 1].getData(i, 0),
-						i, 0);
-			}
-		}
-		System.out.println("---CALCULATION OF w_GRADIENT FOR EVERY LAYER---");
-		for (int n = No_l - 2; n > 0; n--) {
-			Gradient_w[n].setData(
-					Matrix.transpose(
-							Matrix.prod(
-									Matrix.mult(a[n], Gradient_a[n]),
-									sigmoid_1(Matrix.transpose(z[n]))))
-							.getData());
+			System.out.println("COST: " + cost(Target));
+			//learningrate();
 		}
 	}
 
-	public void forwardInfo() {
-		for (int i = 0; i < No_l - 1; i++)
-			System.out.printf("\n%d. Layer's | Nodes: %d & Z's: %d & biases: %d & weights %dx%d  ", i, a[i].getRows(),
-					z[i].getRows(), b[i].getRows(), w[i].getRows(), w[i].getColumns());
-		// info about last layer
-		System.out.printf("%d. Layer's | Nodes: %d & y's: %d  \n", No_l - 1, a[No_l - 1].getRows(), y.getRows());
+	public void guess(double[][] input) {
+		forwardProp(input);
+		System.out.println(cost(Target.getData()));
 	}
 
-	public void backwardInfo() {
-		for (int i = 0; i < No_l - 1; i++)
-			System.out.printf("\n%d. Layer's | Node Gradients: %d & Bias Gradients: %d & Weight Gradients %dx%d  \n", i,
-					Gradient_a[i].getRows(), Gradient_b[i].getRows(), Gradient_w[i].getRows(),
-					Gradient_w[i].getColumns());
+	public void infoL() {
+		for (int i = 0; i < No_L - 1; i++) {
+			System.out.println("\nLayer " + i);
+			System.out.print("a: ");
+			Matrix.printM(Layers[i]);
+			System.out.print("w: ");
+			Matrix.printM(Weights[i]);
+			System.out.print("b: ");
+			Matrix.printM(Biases[i]);
+		}
+		System.out.print("a: ");
+		Matrix.printM(Layers[No_L - 1]);
+		System.out.print("y: ");
+		Matrix.printM(Target);
 	}
 
-	public void cost() { //total error of one propagation
-		double var = 0;
-		for (int i = 0; i < a[No_l - 1].getRows(); i++)
-			var += Math.pow((a[No_l - 1].getData(i, 0) - y.getData(i, 0)), 2);
-		C.add(var);
+	public void infoT() {
+		System.out.print("\nInput: ");
+		Matrix.printM(Layers[0]);
+		System.out.print("Guess: ");
+		Matrix.printM(Layers[No_L - 1]);
+		System.out.print("Target: ");
+		Matrix.printM(Target);
+		cost(Target.getData());
 	}
 
-	public void meanCost(int l) { // total error over l different propagations (everytime different input/answers)
-		double var = 0;
-		for (int i = 0; i < l; i++)
-			var += C.get(C.size() - i);
-		Cmean.add(var / l);
-	}
+	private void forwardProp(double[][] input) {
+		//System.out.println("\n++++++++FORWARD-PROPAGATION++++++++++" + t);
 
-	public void learningrate() {
-		lamda = 0.01 * Math.sqrt(t);
-	}
-
-	public void APPLY() {
-		for (int n = No_l - 2; n > 0; n--) {
-			b[n].add(Matrix.scalarmult(lamda, Matrix.negate(Gradient_b[n])));
-			w[n].add(Matrix.scalarmult(lamda, Matrix.negate(Gradient_w[n])));
+		Matrix Layer = Matrix.fromArray(input);
+		Layers[0] = Layer;
+		int i = 1;
+		for (Matrix weight : Weights) {
+			Layer = sigmoid(Matrix.add(Matrix.prod(weight, Layer), Biases[i - 1]));
+			Layers[i] = Layer;
+			i++;
 		}
 	}
 
-	public void info() {
-		System.out.println("\nError of Propagation " + t + " is:\n" + C.get(t - 1));
-		System.out.println("The resulting Matrix is: ");
-		
-		
-		Matrix.printM(a[No_l-1]);
-	}
+	private void backProp(double[][] y) {
+		//System.out.println("\n++++++++BACKWARD-PROPAGATION+++++++++" + t);
 
-	public void printALL() { // redo this with javaFX
-		for (int n = No_l - 2; n > 0; n--) {
-			Matrix.printM(w[n]);
-			Matrix.printM(Gradient_w[n]);
-			Matrix.printM(b[n]);
-			Matrix.printM(Gradient_b[n]);
+		Target = Matrix.fromArray(y);
+		for (int n = No_L - 1; n >= 1; n--) {
+			if (n == No_L - 1)
+				δ[n] = Matrix.scalarmult(2, Matrix.add(Layers[n], Matrix.negate(Target)));
+			else if (n != No_L - 1)
+				δ[n] = Matrix.mult(
+						Matrix.prod(Matrix.T(Weights[n]), δ[n + 1]),
+						Matrix.mult(Layers[n], Matrix.negate(Layers[n]).add(1))); //sigmoid_1(z[n])
+			δCost_δWeights[n - 1] = Matrix.prod(δ[n], Matrix.T(Layers[n - 1]));
+			δCost_δBiases[n - 1] = δ[n];
 		}
 	}
+
+	private double cost(double[][] Target) {
+		double a = 0;
+		for (int i = 0; i < Layers[No_L - 1].getRows(); i++)
+			a += Math.pow((Layers[No_L - 1].getData(i, 0) - Target[i][0]), 2);
+		return a;
+	}
+
+	private void Apply(Matrix[] Δw, Matrix[] Δb) {
+		for (int n = No_L - 2; n > 0; n--) {
+			Biases[n].add(Matrix.scalarmult(η, Matrix.negate(Δb[n])));
+			Weights[n].add(Matrix.scalarmult(η, Matrix.negate(Δw[n])));
+		}
+	}
+
+	private void learningrate() {
+		η = 0 / Math.sqrt(t);
+	}
+
 
 	//SIGMOID THINGS
 	private Matrix sigmoid(Matrix A) {
@@ -214,15 +181,4 @@ public class Perceptron {
 		return 1 / (1 + Math.exp(-a));
 	}
 
-	private Matrix sigmoid_1(Matrix A) {
-		Matrix B = new Matrix(A.getRows(), A.getColumns());
-		for (int i = 0; i < A.getRows(); i++)
-			for (int j = 0; j < A.getColumns(); j++)
-				B.setData(sigmoid_1(A.getData()[i][j]), i, j);
-		return B;
-	}
-
-	private double sigmoid_1(double a) {
-		return sigmoid(a) * (1 - sigmoid(a));
-	}
 }
