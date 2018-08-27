@@ -63,9 +63,9 @@ public class Matrix {
 		this.rows = (m != 0) ? m : 3;
 		this.columns = (n != 0) ? n : 3;
 		this.data = new double[rows][columns];
-		randomfill();
+
 		//for (int i = 0; i < rows && i < columns; i++) // && i< M.columns
-			//this.data[i][i] = diagfill;
+		//this.data[i][i] = diagfill;
 
 	}
 
@@ -85,9 +85,8 @@ public class Matrix {
 	public Matrix(int m, int n, float low, float high) {
 		this.rows = (m > 0) ? m : 3;
 		this.columns = (n > 0) ? n : 3;
-		// System.out.println(" Generating " + rows + "x" + columns + " Matrix filled with random Numbers");
 		this.data = new double[rows][columns];
-		//randomfill(low, high);
+		this.randomfill(low, high);
 	}
 
 	/**
@@ -208,6 +207,15 @@ public class Matrix {
 		return new Matrix(this);
 	}
 
+	public static double[] toArray_flat(Matrix A) {
+		double[] result = new double[A.getRows() * A.getColumns()];
+		for (int i = 0; i < A.getRows(); i++)
+			for (int j = 0; j < A.getColumns(); j++)
+				result[i * A.getColumns() + j] = A.getData(i, j);
+
+		return result;
+	}
+
 	/**
 	 * creates and returns an Matrix Object containing the values specified in the
 	 * given Array
@@ -227,6 +235,14 @@ public class Matrix {
 		return B;
 	}
 
+	public static Matrix fromArray(double[] arr) {
+		Matrix result = new Matrix(arr.length, 1);
+		for (int i = 0; i < arr.length; i++) {
+			result.data[i][0] = arr[i];
+		}
+		return result;
+	}
+
 	/**
 	 * Fills the Matrix of the current instance with random numbers
 	 * 
@@ -235,11 +251,10 @@ public class Matrix {
 	 * @param high
 	 *            upper bound of randomness reach
 	 */
-	private void randomfill() {
+	private void randomfill(double min, double max) {
 		for (int i = 0; i < rows; i++)
 			for (int j = 0; j < columns; j++)
-				data[i][j] = Math.random() * 2 - 1;
-		;
+				data[i][j] = min + Math.random() * (max - min);
 	}
 
 	/**
