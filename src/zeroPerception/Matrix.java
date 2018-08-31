@@ -251,10 +251,41 @@ public class Matrix {
 	 * @param high
 	 *            upper bound of randomness reach
 	 */
+	
 	private void randomfill(double min, double max) {
 		for (int i = 0; i < rows; i++)
 			for (int j = 0; j < columns; j++)
 				data[i][j] = min + Math.random() * (max - min);
+	}
+	/**
+	 * by AvoLord
+	 * */
+	public String toString_auto() { //Not easy readable for the user
+		String result = rows+";"+columns+";";
+		for(int i=0;i<data.length;i++) {
+			result = (i == 0) ? result : result.concat("-");
+			for(int j=0;j<data[i].length;j++) {
+					result = (j==0) ? 
+							result.concat(""+data[i][j]) : 
+							result.concat(","+data[i][j]);
+			}
+		}
+		return result;
+	}
+	/**
+	 * by AvoLord
+	 * */
+	public static Matrix fromString(String matrix) {
+		String[] mat = matrix.split(";");
+		String[] rws = mat[2].split("-");
+		
+		Matrix result = new Matrix(Integer.parseInt(mat[0]),Integer.parseInt(mat[1]),0);
+		for(int i=0; i<result.rows; i++) {
+
+			String[] res = rws[i].split(",");			
+		    Arrays.setAll(result.data[i], k -> Double.parseDouble(res[k]));	
+		}
+		return result;
 	}
 
 	/**
